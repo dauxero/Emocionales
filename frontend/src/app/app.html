@@ -1,0 +1,220 @@
+<div class="app-bg">
+  <!-- ═══════════ Partículas decorativas ═══════════ -->
+  <div class="particles">
+    <span class="particle p1">💫</span>
+    <span class="particle p2">🌸</span>
+    <span class="particle p3">✨</span>
+    <span class="particle p4">🦋</span>
+    <span class="particle p5">🌿</span>
+  </div>
+
+  <main class="container">
+    <!-- ═══════════ HEADER ═══════════ -->
+    <header class="header" [class.header--small]="result">
+      <div class="header__icon">🧠</div>
+      <h1 class="header__title">Mi Espacio Seguro</h1>
+      <p class="header__subtitle">
+        Un lugar para expresar cómo te sientes. Tu bienestar importa.
+      </p>
+    </header>
+
+    <!-- ═══════════ VISTA 1: FORMULARIO ═══════════ -->
+    <section class="card card--form" *ngIf="!result">
+      <div class="card__glow"></div>
+
+      <h2 class="card__title">¿Cómo te sientes hoy?</h2>
+      <p class="card__desc">
+        Escribe lo que sientes con total libertad. Este es tu espacio seguro y confidencial.
+      </p>
+
+      <textarea
+        id="diary-text"
+        class="textarea"
+        [(ngModel)]="text"
+        placeholder="Hoy me siento..."
+        rows="6"
+        maxlength="5000"
+        [disabled]="loading"
+      ></textarea>
+      <div class="textarea__counter">{{ text.length }} / 5000</div>
+
+      <div class="selects-row">
+        <div class="select-group">
+          <label class="select-label" for="age-range">👤 Edad</label>
+          <select id="age-range" class="select" [(ngModel)]="selectedAge" [disabled]="loading">
+            <option [ngValue]="null">Seleccionar...</option>
+            <option *ngFor="let opt of ageRanges" [value]="opt.value">
+              {{ opt.label }}
+            </option>
+          </select>
+        </div>
+
+        <div class="select-group">
+          <label class="select-label" for="context">📎 Contexto</label>
+          <select id="context" class="select" [(ngModel)]="selectedContext" [disabled]="loading">
+            <option [ngValue]="null">Seleccionar...</option>
+            <option *ngFor="let opt of contextOptions" [value]="opt.value">
+              {{ opt.label }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div class="error-banner" *ngIf="error">
+        <span class="error-banner__icon">⚠️</span>
+        <span>{{ error }}</span>
+      </div>
+
+      <button
+        id="submit-btn"
+        class="btn btn--primary"
+        [disabled]="!canSubmit"
+        (click)="onSubmit()"
+      >
+        <span class="btn__text" *ngIf="!loading">✨ Analizar mi diario</span>
+        <span class="btn__loading" *ngIf="loading">
+          <span class="spinner"></span>
+          Analizando…
+        </span>
+      </button>
+    </section>
+
+    <!-- ═══════════ VISTA 2: DASHBOARD RESULTADOS ═══════════ -->
+    <section class="dashboard" *ngIf="result">
+
+      <!-- ── Tarjeta Emoción Principal ── -->
+      <div class="card card--emotion" [ngClass]="alertColorClass">
+        <div class="card__glow"></div>
+
+        <div class="emotion-hero">
+          <span class="emotion-hero__emoji">{{ result.dominant_emotion.emoji }}</span>
+          <div class="emotion-hero__info">
+            <h2 class="emotion-hero__label">{{ result.dominant_emotion.label_es }}</h2>
+            <span class="emotion-hero__category">{{ result.dominant_emotion.category }}</span>
+          </div>
+        </div>
+
+        <div class="intensity">
+          <div class="intensity__header">
+            <span class="intensity__level">
+              {{ result.intensity.emoji }} {{ result.intensity.level }}
+            </span>
+            <span class="intensity__score">
+              {{ (result.dominant_emotion.score * 100).toFixed(0) }}%
+            </span>
+          </div>
+          <div class="intensity__bar-bg">
+            <div
+              class="intensity__bar-fill"
+              [style.width]="intensityBarWidth"
+              [ngClass]="alertColorClass"
+            ></div>
+          </div>
+        </div>
+
+        <div class="alert-badge" [ngClass]="alertColorClass">
+          <span>{{ result.alert_emoji }} {{ result.alert_level }}</span>
+        </div>
+      </div>
+
+      <!-- ── Refuerzo positivo / Gamificación ── -->
+      <div
+        class="card card--reinforcement"
+        *ngIf="result.positive_reinforcement.length > 0"
+      >
+        <div class="card__glow card__glow--gold"></div>
+        <h3 class="card__title card__title--gold">🏅 ¡Buen trabajo!</h3>
+        <div class="reinforcement-list">
+          <p
+            class="reinforcement-item"
+            *ngFor="let msg of result.positive_reinforcement"
+          >
+            {{ msg }}
+          </p>
+        </div>
+      </div>
+
+      <!-- ── Alerta y ruta ── -->
+      <div class="card card--route" [ngClass]="alertColorClass">
+        <div class="card__glow"></div>
+        <h3 class="card__title">🛤️ Ruta de Acompañamiento</h3>
+        <p class="route__description">{{ result.alert_description }}</p>
+        <div class="route__badge">
+          <span class="route__name">{{ result.route.name }}</span>
+          <span class="route__follow-up" *ngIf="result.route.requires_follow_up">
+            🔔 Requiere seguimiento
+          </span>
+        </div>
+      </div>
+
+      <!-- ── Recomendaciones ── -->
+      <div class="card card--recommendations">
+        <div class="card__glow"></div>
+        <h3 class="card__title">💡 Recomendaciones</h3>
+        <ul class="recommendations-list">
+          <li
+            class="recommendation-item"
+            *ngFor="let rec of result.recommendations"
+          >
+            {{ rec }}
+          </li>
+        </ul>
+      </div>
+
+      <!-- ── Todas las emociones ── -->
+      <div class="card card--all-emotions">
+        <div class="card__glow"></div>
+        <h3 class="card__title">🎭 Todas las emociones detectadas</h3>
+        <div class="emotions-grid">
+          <div
+            class="emotion-chip"
+            *ngFor="let emo of result.all_emotions"
+            [class.emotion-chip--dominant]="emo.label_en === result.dominant_emotion.label_en"
+          >
+            <span class="emotion-chip__emoji">{{ emo.emoji }}</span>
+            <span class="emotion-chip__label">{{ emo.label_es }}</span>
+            <span class="emotion-chip__score">{{ (emo.score * 100).toFixed(1) }}%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Riesgos (toggle) ── -->
+      <div class="card card--risks">
+        <div class="card__glow"></div>
+        <button class="btn btn--ghost" (click)="toggleRisks()">
+          {{ showRisks ? '🔒 Ocultar' : '🔍 Mostrar' }} análisis de riesgos
+        </button>
+
+        <div class="risks-panel" *ngIf="showRisks">
+          <div class="risk-row" *ngFor="let risk of result.risk_analysis">
+            <div class="risk-row__header">
+              <span class="risk-row__label">
+                {{ risk.label }}
+                <span class="risk-row__badge" *ngIf="risk.is_school_related">🏫</span>
+              </span>
+              <span class="risk-row__score">{{ (risk.score * 100).toFixed(1) }}%</span>
+            </div>
+            <div class="risk-row__bar-bg">
+              <div
+                class="risk-row__bar-fill"
+                [style.width]="(risk.score * 100) + '%'"
+                [style.background]="getRiskBarColor(risk)"
+              ></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Botón volver ── -->
+      <button class="btn btn--secondary" (click)="resetForm()">
+        ✏️ Escribir otra entrada
+      </button>
+    </section>
+  </main>
+
+  <!-- ═══════════ FOOTER ═══════════ -->
+  <footer class="footer">
+    <p>Kit de Emociones · Plataforma Educativa · v2.0</p>
+  </footer>
+</div>
